@@ -1,0 +1,321 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Profil pengguna portal layanan administrasi guru (guru atau operator admin).",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID pengguna.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Nama lengkap guru atau operator.",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Alamat email terverifikasi pengguna.",
+          "minLength": 3,
+          "maxLength": 200
+        },
+        "schoolName": {
+          "type": "string",
+          "description": "Nama satuan pendidikan atau sekolah.",
+          "maxLength": 160
+        },
+        "nipOrNuptk": {
+          "type": "string",
+          "description": "NIP atau NUPTK guru (opsional).",
+          "maxLength": 40
+        },
+        "role": {
+          "type": "string",
+          "description": "Peran pengguna dalam sistem.",
+          "enum": ["guru", "admin"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Waktu pembuatan profil."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Waktu pembaruan profil terakhir."
+        }
+      },
+      "required": ["uid", "displayName", "email", "schoolName", "nipOrNuptk", "role", "createdAt", "updatedAt"]
+    },
+    "Complaint": {
+      "title": "Complaint",
+      "description": "Catatan aduan permasalahan administrasi dari guru beserta rekomendasi solusi dan tanggapan resmi.",
+      "type": "object",
+      "properties": {
+        "ticketCode": {
+          "type": "string",
+          "description": "Kode tiket unik aduan.",
+          "minLength": 8,
+          "maxLength": 32,
+          "pattern": "^ADU-[0-9]{4}-[A-Z0-9]{4,8}$"
+        },
+        "authorId": {
+          "type": "string",
+          "description": "UID guru pengirim aduan.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "teacherName": {
+          "type": "string",
+          "description": "Nama lengkap guru pengirim aduan.",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "teacherEmail": {
+          "type": "string",
+          "format": "email",
+          "description": "Email guru pengirim aduan.",
+          "minLength": 3,
+          "maxLength": 200
+        },
+        "schoolName": {
+          "type": "string",
+          "description": "Nama sekolah atau unit kerja.",
+          "minLength": 2,
+          "maxLength": 160
+        },
+        "nipOrNuptk": {
+          "type": "string",
+          "description": "NIP atau NUPTK guru.",
+          "maxLength": 40
+        },
+        "category": {
+          "type": "string",
+          "description": "Kategori permasalahan administrasi guru.",
+          "enum": [
+            "Dapodik & Sinkronisasi Data",
+            "Info GTK & Tunjangan Profesi (TPG)",
+            "NUPTK, NRG & Verval PTK",
+            "SK Pembagian Tugas & Jam Mengajar",
+            "Kenaikan Pangkat, PAK & e-Kinerja",
+            "Kurikulum, Rapor & E-Rapor",
+            "Cuti, Izin & Kepegawaian",
+            "Tata Usaha & Administrasi Lainnya"
+          ]
+        },
+        "urgency": {
+          "type": "string",
+          "description": "Tingkat urgensi penanganan aduan.",
+          "enum": ["Normal", "Mendesak", "Kritis"]
+        },
+        "title": {
+          "type": "string",
+          "description": "Judul ringkas permasalahan.",
+          "minLength": 5,
+          "maxLength": 180
+        },
+        "description": {
+          "type": "string",
+          "description": "Kronologi dan detail kendala administrasi yang dialami.",
+          "minLength": 10,
+          "maxLength": 3000
+        },
+        "status": {
+          "type": "string",
+          "description": "Status penyelesaian aduan.",
+          "enum": ["Menunggu Tinjauan", "Sedang Diproses", "Terselesaikan"]
+        },
+        "solutionSummary": {
+          "type": "string",
+          "description": "Ringkasan diagnosis dan solusi permasalahan.",
+          "maxLength": 1000
+        },
+        "solutionSteps": {
+          "type": "array",
+          "description": "Daftar langkah penyelesaian terurut."
+        },
+        "requiredDocuments": {
+          "type": "array",
+          "description": "Dokumen atau berkas pendukung yang diperlukan."
+        },
+        "relatedParties": {
+          "type": "string",
+          "description": "Pihak atau instansi terkait penyelesaian.",
+          "maxLength": 300
+        },
+        "estimatedTime": {
+          "type": "string",
+          "description": "Estimasi waktu penyelesaian.",
+          "maxLength": 120
+        },
+        "officialResponse": {
+          "type": "string",
+          "description": "Catatan dan tanggapan resmi dari operator atau admin.",
+          "maxLength": 2500
+        },
+        "resolvedBy": {
+          "type": "string",
+          "description": "Nama pihak yang mengonfirmasi penyelesaian.",
+          "maxLength": 120
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Waktu aduan dibuat."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Waktu aduan diperbarui."
+        }
+      },
+      "required": [
+        "ticketCode",
+        "authorId",
+        "teacherName",
+        "teacherEmail",
+        "schoolName",
+        "nipOrNuptk",
+        "category",
+        "urgency",
+        "title",
+        "description",
+        "status",
+        "solutionSummary",
+        "solutionSteps",
+        "requiredDocuments",
+        "relatedParties",
+        "estimatedTime",
+        "officialResponse",
+        "resolvedBy",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ComplaintNote": {
+      "title": "ComplaintNote",
+      "description": "Catatan tindak lanjut atau klarifikasi pada suatu aduan administrasi.",
+      "type": "object",
+      "properties": {
+        "complaintAuthorId": {
+          "type": "string",
+          "description": "UID pembuat aduan induk untuk isolasi query.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "authorId": {
+          "type": "string",
+          "description": "UID pengirim catatan tindak lanjut.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "authorName": {
+          "type": "string",
+          "description": "Nama pengirim catatan.",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "authorRole": {
+          "type": "string",
+          "description": "Peran pengirim catatan.",
+          "enum": ["guru", "admin"]
+        },
+        "message": {
+          "type": "string",
+          "description": "Isi catatan tindak lanjut atau klarifikasi.",
+          "minLength": 1,
+          "maxLength": 1500
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Waktu catatan dikirim."
+        }
+      },
+      "required": ["complaintAuthorId", "authorId", "authorName", "authorRole", "message", "createdAt"]
+    },
+    "KnowledgeSolution": {
+      "title": "KnowledgeSolution",
+      "description": "Panduan solusi standar untuk permasalahan administrasi guru yang sering terjadi.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Judul panduan masalah administrasi.",
+          "minLength": 5,
+          "maxLength": 180
+        },
+        "category": {
+          "type": "string",
+          "description": "Kategori administrasi terkait.",
+          "enum": [
+            "Dapodik & Sinkronisasi Data",
+            "Info GTK & Tunjangan Profesi (TPG)",
+            "NUPTK, NRG & Verval PTK",
+            "SK Pembagian Tugas & Jam Mengajar",
+            "Kenaikan Pangkat, PAK & e-Kinerja",
+            "Kurikulum, Rapor & E-Rapor",
+            "Cuti, Izin & Kepegawaian",
+            "Tata Usaha & Administrasi Lainnya"
+          ]
+        },
+        "symptom": {
+          "type": "string",
+          "description": "Gejala atau ciri kendala yang muncul.",
+          "minLength": 10,
+          "maxLength": 600
+        },
+        "steps": {
+          "type": "array",
+          "description": "Langkah penyelesaian resmi."
+        },
+        "documents": {
+          "type": "array",
+          "description": "Daftar dokumen yang diperlukan."
+        },
+        "relatedParties": {
+          "type": "string",
+          "description": "Pihak atau unit layanan terkait.",
+          "maxLength": 250
+        },
+        "isPublished": {
+          "type": "boolean",
+          "description": "Status publikasi panduan."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Waktu pembaruan panduan."
+        }
+      },
+      "required": ["title", "category", "symptom", "steps", "documents", "relatedParties", "isPublished", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Menyimpan profil dan peran pengguna (PII terisolasi per pemilik atau admin)."
+    },
+    "/complaints/{complaintId}": {
+      "schema": { "$ref": "#/entities/Complaint" },
+      "description": "Menyimpan seluruh aduan administrasi guru dan rekomendasi solusinya."
+    },
+    "/complaints/{complaintId}/notes/{noteId}": {
+      "schema": { "$ref": "#/entities/ComplaintNote" },
+      "description": "Subkoleksi catatan tindak lanjut dan komunikasi per aduan."
+    },
+    "/knowledge_solutions/{guideId}": {
+      "schema": { "$ref": "#/entities/KnowledgeSolution" },
+      "description": "Bank solusi standar permasalahan administrasi guru."
+    }
+  }
+}

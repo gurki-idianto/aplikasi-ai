@@ -1,0 +1,8 @@
+{
+  "name": "SAPA PTK — Aduan & Solusi Administrasi Guru",
+  "description": "Aplikasi pencatatan aduan permasalahan administrasi guru beserta rekomendasi solusi terstruktur dan tindak lanjut operator sekolah.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

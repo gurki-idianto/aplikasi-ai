@@ -1,0 +1,269 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global safety net: default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Connection validation document for startup check
+    match /test/connection {
+      allow get: if true;
+    }
+
+    // --- Reusable Hardened Helpers ---
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedEmail() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isVerifiedEmail() && (
+        request.auth.token.email == 'ptk.aja507@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidCategory(cat) {
+      return cat in [
+        'Dapodik & Sinkronisasi Data',
+        'Info GTK & Tunjangan Profesi (TPG)',
+        'NUPTK, NRG & Verval PTK',
+        'SK Pembagian Tugas & Jam Mengajar',
+        'Kenaikan Pangkat, PAK & e-Kinerja',
+        'Kurikulum, Rapor & E-Rapor',
+        'Cuti, Izin & Kepegawaian',
+        'Tata Usaha & Administrasi Lainnya'
+      ];
+    }
+
+    function isValidUrgency(urg) {
+      return urg in ['Normal', 'Mendesak', 'Kritis'];
+    }
+
+    function isValidStatus(st) {
+      return st in ['Menunggu Tinjauan', 'Sedang Diproses', 'Terselesaikan'];
+    }
+
+    function isValidStringArray(arr, maxItems, maxItemLen) {
+      return arr is list &&
+        arr.size() <= maxItems &&
+        (arr.size() == 0 || (arr[0] is string && arr[0].size() <= maxItemLen));
+    }
+
+    // --- Validation Blueprints ---
+    function isValidUserProfile(data) {
+      return data.keys().hasAll([
+          'uid', 'displayName', 'email', 'schoolName', 'nipOrNuptk', 'role', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'uid', 'displayName', 'email', 'schoolName', 'nipOrNuptk', 'role', 'createdAt', 'updatedAt'
+        ]) &&
+        data.uid is string && data.uid.size() >= 1 && data.uid.size() <= 128 &&
+        data.displayName is string && data.displayName.size() >= 2 && data.displayName.size() <= 120 &&
+        data.email is string && data.email.size() >= 3 && data.email.size() <= 200 &&
+        data.schoolName is string && data.schoolName.size() <= 160 &&
+        data.nipOrNuptk is string && data.nipOrNuptk.size() <= 40 &&
+        data.role in ['guru', 'admin'] &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidComplaint(data) {
+      return data.keys().hasAll([
+          'ticketCode', 'authorId', 'teacherName', 'teacherEmail', 'schoolName',
+          'nipOrNuptk', 'category', 'urgency', 'title', 'description', 'status',
+          'solutionSummary', 'solutionSteps', 'requiredDocuments', 'relatedParties',
+          'estimatedTime', 'officialResponse', 'resolvedBy', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'ticketCode', 'authorId', 'teacherName', 'teacherEmail', 'schoolName',
+          'nipOrNuptk', 'category', 'urgency', 'title', 'description', 'status',
+          'solutionSummary', 'solutionSteps', 'requiredDocuments', 'relatedParties',
+          'estimatedTime', 'officialResponse', 'resolvedBy', 'createdAt', 'updatedAt'
+        ]) &&
+        data.ticketCode is string && data.ticketCode.size() >= 8 && data.ticketCode.size() <= 32 &&
+        data.ticketCode.matches('^ADU-[0-9]{4}-[A-Z0-9]{4,8}$') &&
+        data.authorId is string && data.authorId.size() >= 1 && data.authorId.size() <= 128 &&
+        data.teacherName is string && data.teacherName.size() >= 2 && data.teacherName.size() <= 120 &&
+        data.teacherEmail is string && data.teacherEmail.size() >= 3 && data.teacherEmail.size() <= 200 &&
+        data.schoolName is string && data.schoolName.size() >= 2 && data.schoolName.size() <= 160 &&
+        data.nipOrNuptk is string && data.nipOrNuptk.size() <= 40 &&
+        isValidCategory(data.category) &&
+        isValidUrgency(data.urgency) &&
+        data.title is string && data.title.size() >= 5 && data.title.size() <= 180 &&
+        data.description is string && data.description.size() >= 10 && data.description.size() <= 3000 &&
+        isValidStatus(data.status) &&
+        data.solutionSummary is string && data.solutionSummary.size() <= 1000 &&
+        isValidStringArray(data.solutionSteps, 10, 500) &&
+        isValidStringArray(data.requiredDocuments, 10, 300) &&
+        data.relatedParties is string && data.relatedParties.size() <= 300 &&
+        data.estimatedTime is string && data.estimatedTime.size() <= 120 &&
+        data.officialResponse is string && data.officialResponse.size() <= 2500 &&
+        data.resolvedBy is string && data.resolvedBy.size() <= 120 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidNote(data) {
+      return data.keys().hasAll([
+          'complaintAuthorId', 'authorId', 'authorName', 'authorRole', 'message', 'createdAt'
+        ]) &&
+        data.keys().hasOnly([
+          'complaintAuthorId', 'authorId', 'authorName', 'authorRole', 'message', 'createdAt'
+        ]) &&
+        data.complaintAuthorId is string && data.complaintAuthorId.size() >= 1 && data.complaintAuthorId.size() <= 128 &&
+        data.authorId is string && data.authorId.size() >= 1 && data.authorId.size() <= 128 &&
+        data.authorName is string && data.authorName.size() >= 1 && data.authorName.size() <= 120 &&
+        data.authorRole in ['guru', 'admin'] &&
+        data.message is string && data.message.size() >= 1 && data.message.size() <= 1500 &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidKnowledgeSolution(data) {
+      return data.keys().hasAll([
+          'title', 'category', 'symptom', 'steps', 'documents', 'relatedParties', 'isPublished', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'title', 'category', 'symptom', 'steps', 'documents', 'relatedParties', 'isPublished', 'updatedAt'
+        ]) &&
+        data.title is string && data.title.size() >= 5 && data.title.size() <= 180 &&
+        isValidCategory(data.category) &&
+        data.symptom is string && data.symptom.size() >= 10 && data.symptom.size() <= 600 &&
+        isValidStringArray(data.steps, 10, 500) &&
+        isValidStringArray(data.documents, 10, 300) &&
+        data.relatedParties is string && data.relatedParties.size() <= 250 &&
+        data.isPublished is bool &&
+        data.updatedAt is timestamp;
+    }
+
+    // --- Collection Rules ---
+
+    match /admins/{adminId} {
+      allow get: if isValidId(adminId) && (isOwner(adminId) || isAdmin());
+      allow list, create, update, delete: if false;
+    }
+
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isVerifiedEmail() &&
+        isValidId(userId) &&
+        isOwner(userId) &&
+        isValidUserProfile(incoming()) &&
+        incoming().uid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        (incoming().role == 'guru' || isAdmin());
+      allow update: if isVerifiedEmail() &&
+        isValidId(userId) &&
+        isValidUserProfile(incoming()) &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        (
+          isAdmin() ||
+          (
+            isOwner(userId) &&
+            incoming().role == existing().role &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'schoolName', 'nipOrNuptk', 'updatedAt'])
+          )
+        );
+      allow delete: if isAdmin() && isValidId(userId);
+    }
+
+    match /complaints/{complaintId} {
+      allow get: if isSignedIn() && isValidId(complaintId) && (existing().authorId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.authorId == request.auth.uid || isAdmin());
+      allow create: if isVerifiedEmail() &&
+        isValidId(complaintId) &&
+        isValidComplaint(incoming()) &&
+        incoming().authorId == request.auth.uid &&
+        incoming().status == 'Menunggu Tinjauan' &&
+        incoming().officialResponse == '' &&
+        incoming().resolvedBy == '' &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerifiedEmail() &&
+        isValidId(complaintId) &&
+        isValidComplaint(incoming()) &&
+        incoming().authorId == existing().authorId &&
+        incoming().ticketCode == existing().ticketCode &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        (
+          isAdmin() ||
+          (
+            existing().authorId == request.auth.uid &&
+            existing().status != 'Terselesaikan' &&
+            (
+              (
+                incoming().status == 'Terselesaikan' &&
+                incoming().diff(existing()).affectedKeys().hasOnly(['status', 'resolvedBy', 'updatedAt'])
+              ) ||
+              (
+                existing().status == 'Menunggu Tinjauan' &&
+                incoming().status == existing().status &&
+                incoming().diff(existing()).affectedKeys().hasOnly([
+                  'title', 'description', 'urgency', 'category', 'schoolName', 'nipOrNuptk',
+                  'solutionSummary', 'solutionSteps', 'requiredDocuments', 'relatedParties',
+                  'estimatedTime', 'updatedAt'
+                ])
+              )
+            )
+          )
+        );
+      allow delete: if isVerifiedEmail() &&
+        isValidId(complaintId) &&
+        (isAdmin() || (existing().authorId == request.auth.uid && existing().status == 'Menunggu Tinjauan'));
+
+      match /notes/{noteId} {
+        allow get: if isSignedIn() && isValidId(complaintId) && isValidId(noteId) &&
+          (existing().complaintAuthorId == request.auth.uid || isAdmin());
+        allow list: if isSignedIn() &&
+          (resource.data.complaintAuthorId == request.auth.uid || isAdmin());
+        allow create: if isVerifiedEmail() &&
+          isValidId(complaintId) &&
+          isValidId(noteId) &&
+          isValidNote(incoming()) &&
+          incoming().authorId == request.auth.uid &&
+          incoming().createdAt == request.time &&
+          (incoming().authorRole == 'guru' || isAdmin()) &&
+          exists(/databases/$(database)/documents/complaints/$(complaintId)) &&
+          get(/databases/$(database)/documents/complaints/$(complaintId)).data.authorId == incoming().complaintAuthorId &&
+          (isAdmin() || get(/databases/$(database)/documents/complaints/$(complaintId)).data.authorId == request.auth.uid);
+        allow update: if false;
+        allow delete: if isAdmin() && isValidId(complaintId) && isValidId(noteId);
+      }
+    }
+
+    match /knowledge_solutions/{guideId} {
+      allow get: if isSignedIn() && isValidId(guideId) && (existing().isPublished == true || isAdmin());
+      allow list: if isSignedIn() && (resource.data.isPublished == true || isAdmin());
+      allow create: if isAdmin() && isValidId(guideId) && isValidKnowledgeSolution(incoming()) && incoming().updatedAt == request.time;
+      allow update: if isAdmin() && isValidId(guideId) && isValidKnowledgeSolution(incoming()) && incoming().updatedAt == request.time;
+      allow delete: if isAdmin() && isValidId(guideId);
+    }
+  }
+}
